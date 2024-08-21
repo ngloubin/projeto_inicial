@@ -1,29 +1,45 @@
 import pygame
 import os
-import time
 import random
 pygame.font.init()
 
+# Inicializar Pygame e o mixer
+pygame.init()
+pygame.mixer.init()
+
+# Dimensões da tela
 WIDTH, HEIGHT = 750, 750
 WIN = pygame.display.set_mode((WIDTH, HEIGHT))
-pygame.display.set_caption("Space Shooter Tutorial")
+pygame.display.set_caption("Space Invaders do Matheus N")
 
-# Load images
-RED_SPACE_SHIP = pygame.image.load(os.path.join("assets", "pixel_ship_red_small.png"))
-GREEN_SPACE_SHIP = pygame.image.load(os.path.join("assets", "pixel_ship_green_small.png"))
-BLUE_SPACE_SHIP = pygame.image.load(os.path.join("assets", "pixel_ship_blue_small.png"))
+# Carregar imagens
+def load_image(filename):
+    try:
+        return pygame.image.load(os.path.join("assets", filename))
+    except pygame.error as e:
+        print(f"Falha ao carregar a imagem {filename}: {e}")
+        raise
 
-# Player player
-YELLOW_SPACE_SHIP = pygame.image.load(os.path.join("assets", "pixel_ship_yellow.png"))
+RED_SPACE_SHIP = load_image("pixel_ship_red_small.png")
+GREEN_SPACE_SHIP = load_image("pixel_ship_green_small.png")
+BLUE_SPACE_SHIP = load_image("pixel_ship_blue_small.png")
+YELLOW_SPACE_SHIP = load_image("spaceship.png")
+RED_LASER = load_image("pixel_laser_red.png")
+GREEN_LASER = load_image("pixel_laser_green.png")
+BLUE_LASER = load_image("pixel_laser_blue.png")
+YELLOW_LASER = load_image("pixel_laser_yellow.png")
+BG = pygame.transform.scale(load_image("bg.png"), (WIDTH, HEIGHT))
 
-# Lasers
-RED_LASER = pygame.image.load(os.path.join("assets", "pixel_laser_red.png"))
-GREEN_LASER = pygame.image.load(os.path.join("assets", "pixel_laser_green.png"))
-BLUE_LASER = pygame.image.load(os.path.join("assets", "pixel_laser_blue.png"))
-YELLOW_LASER = pygame.image.load(os.path.join("assets", "pixel_laser_yellow.png"))
+# Carregar sons
+def load_sound(filename):
+    try:
+        return pygame.mixer.Sound(os.path.join("assets", filename))
+    except pygame.error as e:
+        print(f"Falha ao carregar o som {filename}: {e}")
+        raise
 
-# Background
-BG = pygame.transform.scale(pygame.image.load(os.path.join("assets", "background-black.png")), (WIDTH, HEIGHT))
+LASER_SOUND = load_sound("lase.wav")
+EXPLOSION_SOUND = load_sound("explosion.wav")
 
 class Laser:
     def __init__(self, x, y, img):
@@ -83,6 +99,7 @@ class Ship:
             laser = Laser(self.x, self.y, self.laser_img)
             self.lasers.append(laser)
             self.cool_down_counter = 1
+            LASER_SOUND.play()
 
     def get_width(self):
         return self.ship_img.get_width()
@@ -109,6 +126,7 @@ class Player(Ship):
                 for obj in objs:
                     if laser.collision(obj):
                         objs.remove(obj)
+                        EXPLOSION_SOUND.play()
                         if laser in self.lasers:
                             self.lasers.remove(laser)
 
@@ -153,6 +171,7 @@ def main():
     FPS = 60
     level = 0
     lives = 5
+    score = 0
     main_font = pygame.font.SysFont("comicsans", 50)
     lost_font = pygame.font.SysFont("comicsans", 60)
 
@@ -172,12 +191,13 @@ def main():
 
     def redraw_window():
         WIN.blit(BG, (0,0))
-        # draw text
         lives_label = main_font.render(f"Lives: {lives}", 1, (255,255,255))
         level_label = main_font.render(f"Level: {level}", 1, (255,255,255))
+        score_label = main_font.render(f"Score: {score}", 1, (255,255,255))
 
         WIN.blit(lives_label, (10, 10))
         WIN.blit(level_label, (WIDTH - level_label.get_width() - 10, 10))
+        WIN.blit(score_label, (WIDTH / 2 - score_label.get_width() / 2, 10))
 
         for enemy in enemies:
             enemy.draw(WIN)
@@ -199,7 +219,7 @@ def main():
             lost_count += 1
 
         if lost:
-            if lost_count > FPS * 3:
+            if lost_count > FPS * 2:  # Espera por 2 segundos
                 run = False
             else:
                 continue
@@ -213,18 +233,21 @@ def main():
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                quit()
+                pygame.quit()
+                return
 
         keys = pygame.key.get_pressed()
-        if keys[pygame.K_a] and player.x - player_vel > 0: # left
+        if keys[pygame.K_LEFT] and player.x - player_vel > 0:
             player.x -= player_vel
-        if keys[pygame.K_d] and player.x + player_vel + player.get_width() < WIDTH: # right
+        if keys[pygame.K_RIGHT] and player.x + player_vel + player.get_width() < WIDTH:
             player.x += player_vel
-        if keys[pygame.K_w] and player.y - player_vel > 0: # up
+        if keys[pygame.K_UP] and player.y - player_vel > 0:
             player.y -= player_vel
-        if keys[pygame.K_s] and player.y + player_vel + player.get_height() + 15 < HEIGHT: # down
+        if keys[pygame.K_DOWN] and player.y + player_vel + player.get_height() + 15 < HEIGHT:
             player.y += player_vel
-        if keys[pygame.K_SPACE]:
+
+        mouse_buttons = pygame.mouse.get_pressed()
+        if mouse_buttons[0]:  # Botão esquerdo do mouse
             player.shoot()
 
         for enemy in enemies[:]:
@@ -237,11 +260,17 @@ def main():
             if collide(enemy, player):
                 player.health -= 10
                 enemies.remove(enemy)
-            elif enemy.y + enemy.get_height() > HEIGHT:
+                EXPLOSION_SOUND.play()
+                continue
+
+            if enemy.y + enemy.get_height() > HEIGHT:
                 lives -= 1
                 enemies.remove(enemy)
 
         player.move_lasers(-laser_vel, enemies)
+
+        if lost and lost_count == FPS * 2:
+            pygame.time.delay(2000)  # Aguarda 2 segundos antes de voltar ao menu
 
 def main_menu():
     title_font = pygame.font.SysFont("comicsans", 70)
@@ -253,10 +282,10 @@ def main_menu():
         pygame.display.update()
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                run = False
+                pygame.quit()
+                return
             if event.type == pygame.MOUSEBUTTONDOWN:
                 main()
-    pygame.quit()
 
-
-main_menu()
+if __name__ == "__main__":
+    main_menu()
