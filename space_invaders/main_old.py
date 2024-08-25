@@ -23,23 +23,23 @@ def load_image(filename):
 RED_SPACE_SHIP = load_image("pixel_ship_red_small.png")
 GREEN_SPACE_SHIP = load_image("pixel_ship_green_small.png")
 BLUE_SPACE_SHIP = load_image("pixel_ship_blue_small.png")
-YELLOW_SPACE_SHIP = load_image("spaceship.png")
+YELLOW_SPACE_SHIP = load_image("pixel_ship_yellow.png")
 RED_LASER = load_image("pixel_laser_red.png")
 GREEN_LASER = load_image("pixel_laser_green.png")
 BLUE_LASER = load_image("pixel_laser_blue.png")
 YELLOW_LASER = load_image("pixel_laser_yellow.png")
-BG = pygame.transform.scale(load_image("bg.png"), (WIDTH, HEIGHT))
+BG = pygame.transform.scale(load_image("background-black.png"), (WIDTH, HEIGHT))
 
 # Carregar sons
 def load_sound(filename):
     try:
-        return pygame.mixer.Sound(os.path.join("assets", filename))
+        return pygame.mixer.Sound(os.path.join("sounds", filename))
     except pygame.error as e:
         print(f"Falha ao carregar o som {filename}: {e}")
         raise
 
-LASER_SOUND = load_sound("lase.wav")
-EXPLOSION_SOUND = load_sound("explosion.wav")
+LASER_SOUND = load_sound("space-laser.mp3")
+EXPLOSION_SOUND = load_sound("explosion.mp3")  # Se você tiver um som de explosão em MP3, ajuste o nome aqui
 
 class Laser:
     def __init__(self, x, y, img):
@@ -164,7 +164,7 @@ class Enemy(Ship):
 def collide(obj1, obj2):
     offset_x = obj2.x - obj1.x
     offset_y = obj2.y - obj1.y
-    return obj1.mask.overlap(obj2.mask, (offset_x, offset_y)) != None
+    return obj1.mask.overlap(obj2.mask, (offset_x, offset_y)) is not None
 
 def main():
     run = True

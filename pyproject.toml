@@ -1,0 +1,16 @@
+[tool.poetry]
+name = "space-invaders"
+version = "0.1.0"
+description = "game"
+authors = ["Matheus Nogueira <nogueiramatheus780@gmail.com>"]
+license = "mit"
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "3.12.*"
+pygame = "^2.6.0"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
